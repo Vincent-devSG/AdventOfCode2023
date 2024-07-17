@@ -10,26 +10,33 @@ lines = [line.strip().split() for line in lines]
 size = len(lines)
 ranking = np.arange(1, size + 1, dtype=int) 
 
-order = {'1': 1, '2': 2, '3': 3, '4': 4, '5': 5, '6': 6, '7': 7, '8': 8, '9': 9, 'T': 10, 'J': 11, 'Q': 12, 'K': 13, 'A': 14}
+order = {'J': 1, '2': 2, '3': 3, '4': 4, '5': 5, '6': 6, '7': 7, '8': 8, '9': 9, 'T': 10, '_': 11, 'Q': 12, 'K': 13, 'A': 14}
 
 hand_list = []
 for line in lines:
-
-    hand = Counter(line[0])
+    hand = line[0]
     bid = line[1]
-
     hand_list.append([hand, int(bid)])
 
 
+def rate_hand(hand, joker_transform=False):
 
+    hand_copy = hand[0]
+    if joker_transform:
+        rank = Counter(hand_copy)
+        if 'J' in rank:
+            ranked_hand = sorted(rank.most_common(), key=lambda x: (x[1], order[x[0]]), reverse=True)
+            stg = ''
+            for elem in ranked_hand:
+                if elem[0] != 'J':
+                    stg = elem[0]
+                    break
+            
+            if stg != '':
+                hand_copy = hand_copy.replace('J', stg)
 
-def rate_hand(hand):
+    rank = sorted(Counter(hand_copy).values(), reverse=True)
 
-    rank = []
-    for elem in hand:
-        rank.append(elem[1])
-    
-    
     if max(rank) == 1:
         return 1
     
@@ -37,7 +44,7 @@ def rate_hand(hand):
         return 2.5
     
     if max(rank) == 2:
-        return 2
+        return 2 
     
     if max(rank) == 3 and rank.count(2) == 1:
         return 3.5
@@ -51,13 +58,11 @@ def rate_hand(hand):
     if max(rank) == 5:
         return 5
 
-def compare_hands(hand1, hand2):
-    
-    hand1 = hand1[0].most_common()
-    hand2 = hand2[0].most_common()
 
-    rate_hand_1 = rate_hand(hand1)
-    rate_hand_2 = rate_hand(hand2)
+def compare_hands(hand1, hand2):
+
+    rate_hand_1 = rate_hand(hand1, joker_transform=True)
+    rate_hand_2 = rate_hand(hand2, joker_transform=True)
 
     if rate_hand_1 > rate_hand_2:
         return 1
@@ -66,29 +71,23 @@ def compare_hands(hand1, hand2):
         return -1
     
     if rate_hand_1 == rate_hand_2:
-        mvc1 = []
-        for elem in hand1:
-            mvc1.append(order[elem[0]])
-        mvc2 = []
-        for elem in hand2:
-            mvc2.append(order[elem[0]])
-        
-        for elem1, elem2 in zip(mvc1, mvc2):
-            if elem1 > elem2:
+        for (card1, card2) in zip(hand1[0], hand2[0]):
+            if order[card1[0]] > order[card2[0]]:
                 return 1
-            if elem1 < elem2:
-                return -1
+            if order[card1[0]] < order[card2[0]]:
+                return -1 
         
-
-print(hand_list)
-
-for elem in hand_list:
-    hand = elem[0].most_common()
-    rank = []
-    for elem in hand:
-        rank.append(elem[1])
+    return 0
     
-    print(rank)
-    
+
 sorted_hands = sorted(hand_list, key=functools.cmp_to_key(compare_hands))
-print(sorted_hands)
+
+
+total = 0
+for i, hand in enumerate(sorted_hands):
+   total += hand[1] * (i+1)
+
+print(total)
+
+
+
