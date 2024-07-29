@@ -1,5 +1,8 @@
 import sys
-import PIL.Image
+from PIL import Image, ImageDraw, ImageFont
+
+
+
 with(open('input.txt', 'r')) as file:
     lines = file.readlines()
 
@@ -176,6 +179,81 @@ def floodFill(list_of_nodes, x, y, color):
     fill(list_of_nodes, x, y, color, list_of_nodes[x][y])
     return list_of_nodes
 
+def shitty_part2(graph):
+    for node in graph:
+        list_nodes[node[0]][node[1]] = 1
+    
+    list_char = [[0 for i in range(len(lines))] for j in range(len(lines[0]))]
+    
+    for i in range(len(list_nodes)):
+        for j in range(len(list_nodes[0])):
+            if lines[i][j] == '.':
+                list_char[i][j] = ' '
+            if lines[i][j] == '|':
+                list_char[i][j] = '║'
+            if lines[i][j] == '-':
+                list_char[i][j] = '═'
+            if lines[i][j] == 'L':
+                list_char[i][j] = '╚'
+            if lines[i][j] == 'J':
+                list_char[i][j] = '╝'
+            if lines[i][j] == '7':
+                list_char[i][j] = '╗'
+            if lines[i][j] == 'F':
+                list_char[i][j] = '╔'
+            if lines[i][j] == 'S':
+                list_char[i][j] = 'S'
+
+    for i in range(len(list_nodes)):
+        for j in range(len(list_nodes[0])):
+            if list_nodes[i][j] != 1:
+                list_char[i][j] = ' '
+
+    font_path = '/System/Library/Fonts/Menlo.ttc'
+    font = ImageFont.truetype(font_path, 24)
+
+    
+    rows, cols = len(lines), len(lines[0])
+     # Calculate the size of each character
+    max_width = max(font.getbbox(char)[2] for row in lines for char in row)
+    max_height = max(font.getbbox(char)[3] for row in lines for char in row)
+
+    # Create a new image with a white background
+    img_width = max_width * cols
+    img_height = max_height * rows
+
+    # make an image to visualize the area
+    img = Image.new('RGB', (img_width, img_height), 'white')
+
+    
+    # Create a new image with a white background
+    
+    draw = ImageDraw.Draw(img)
+
+    # Draw each character at the appropriate position
+    for i, row in enumerate(list_char):
+        for j, char in enumerate(row):
+            draw.text((j * max_width, i * max_height), char, font=font, fill='black')
+
+    img.save('area.png')
+    
+    list_of_nodes = floodFill(list_nodes, start[0], start[1], 2)
+
+
+    # make an image to visualize the area
+    img = Image.new('RGB', (len(list_of_nodes), len(list_of_nodes[0])), 'white')
+    pxls = img.load()
+    draw = ImageDraw.Draw(img)
+    for i, row in enumerate(list_of_nodes):
+        for j, char in enumerate(row):
+            if char == 2:
+                pxls[j, i] = (0, 0, 0)
+            if char == 3:
+                pxls[j, i] = (255, 0, 0)
+
+    img.save('new.png')
+
+
 def main(): 
 
     # part 1
@@ -199,60 +277,15 @@ def main():
     # search for the area inside the loop
     # Flood fill algorithm
     # make a 2D array, fill it with 0, put 1 as the path that delimit the area inside
-    for node in graph:
-        list_nodes[node[0]][node[1]] = 1
     
-    # make an image to visualize the area
-    img = PIL.Image.new('RGB', (len(list_nodes), len(list_nodes[0])), 'white')
-    pixels = img.load()
-    for i in range(len(list_nodes)):
-        for j in range(len(list_nodes[0])):
-            if list_nodes[i][j] == 1:
-                pixels[i, j] = (0, 0, 0)
+    shitty_part2(graph)
 
-    img.save('area.png')
-
-    
-    # count the number of 1s
-    count1 = 0
-    for i in range(len(list_nodes)):
-        for j in range(len(list_nodes[0])):
-            if list_nodes[i][j] == 1:
-                count1 += 1
-    
-    list_of_nodes = floodFill(list_nodes, 0, 0, 2)
-    list_of_nodes = floodFill(list_of_nodes, 0, len(list_of_nodes)-1, 2)
-    list_of_nodes = floodFill(list_of_nodes, 0, int(len(list_of_nodes)/2), 2)
-    list_of_nodes = floodFill(list_of_nodes, len(list_of_nodes)-1, 0, 2)
-    list_of_nodes = floodFill(list_of_nodes, int(len(list_of_nodes[0])/2), len(list_of_nodes)-1, 2)
-    list_of_nodes = floodFill(list_of_nodes, int(len(list_of_nodes[0])/2), int(len(list_of_nodes[0])/2), 2)
-
-    # count the number of 0s
-    count = 0
-    for i in range(len(list_of_nodes)):
-        for j in range(len(list_of_nodes[0])):
-            if list_of_nodes[i][j] == 0:
-                count += 1
-
-    print(count - 3)
-
-    # make an image to visualize the area
-    img = PIL.Image.new('RGB', (len(list_nodes), len(list_nodes[0])), 'white')
-    pixels = img.load()
-    for i in range(len(list_nodes)):
-        for j in range(len(list_nodes[0])):
-            if list_nodes[i][j] == 1:
-                pixels[i, j] = (0, 0, 0)
-            if list_nodes[i][j] == 2:
-                pixels[i, j] = (255, 0, 0)
-    
-    img.save('area2.png')
-
-
-    
-
-
-
+    # flood fill algorithm is not working properly
+    # since the pipes can be parallel to each other and thus closing a small area
+    # then the flood fill algorithm will not be able to fill the area inside the bigger loop but only the small one
+    # Then I searched for a solution, and chosed the one from @mgtezak on github
+    # I decided to move on to the next problem and come back to this one later
+    # my solution is not even good, since it takes DECADES to run (the part 1 lol)
 
 if __name__ == "__main__":
     
